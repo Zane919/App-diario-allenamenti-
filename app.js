@@ -206,7 +206,7 @@
   /* ================== ALLENATI ================== */
   function viewHome() {
     const today = new Date().getDay();
-    let h = '<h1 class="page">Allenati</h1><p class="sub cap">' + esc(longDate(todayISO())) + '</p>';
+    let h = '';
     if (S.draft) {
       const done = S.draft.entries.reduce((a, e) => a + e.rows.filter((r) => r.done).length, 0);
       h += `<div class="banner"><span><b>${S.draft.editId ? 'Modifica in corso' : 'Allenamento in corso'}</b><br>${esc(S.draft.sessionName)} · ${done} serie fatte</span><button type="button" data-act="resume">Riprendi</button></div>`;
@@ -374,7 +374,7 @@
   }
   function viewProgress() {
     const lifts = liftList();
-    let h = '<h1 class="page">Progressi</h1><p class="sub">Carichi, ripetizioni e serie nel tempo</p>';
+    let h = '<h1 class="page">Progressi</h1><p class="sub">Carichi, ripetizioni e serie nel tempo.</p>';
     if (!lifts.length) return h + '<p class="empty">Aggiungi degli esercizi alla scheda per vedere i grafici.</p>';
     if (!lifts.some((l) => l.lid === ui.progLid)) { const f = lifts.find((l) => l.count) || lifts[0]; ui.progLid = f.lid; }
     const lid = ui.progLid, full = liftSeries(lid), rng = ui.range;
@@ -401,9 +401,6 @@
     h += `<div class="card"><div class="ct">Carico<span>kg, serie più pesante</span></div>${pw.length ? chartHTML('c1', 'line', pw, 'var(--accent)', W, 'Carico massimo per seduta') : '<p class="empty">Nessun carico registrato.</p>'}</div>`;
     h += `<div class="card"><div class="ct">Ripetizioni<span>media per serie</span></div>${pr.length ? chartHTML('c2', 'line', pr, 'var(--p)', W, 'Ripetizioni medie per serie') : '<p class="empty">Nessuna ripetizione registrata.</p>'}</div>`;
     h += `<div class="card"><div class="ct">Serie<span>fatte per seduta</span></div>${chartHTML('c3', 'bar', pn, 'var(--c)', W, 'Numero di serie per seduta')}</div>`;
-    h += '<div class="card"><details><summary>Tabella dei dati</summary><div class="tablewrap"><table><thead><tr><th>Data</th><th>Serie (kg×rip)</th><th>Max kg</th><th>Rip medie</th><th>N.</th></tr></thead><tbody>' +
-      full.slice().reverse().map((x) => `<tr><td>${esc(shortDate(x.date))}</td><td>${esc(x.e.sets.map(fmtSet).join(' · '))}</td><td>${esc(x.m.w != null ? fmt(x.m.w) : '–')}</td><td>${esc(x.m.r != null ? fmt(x.m.r) : '–')}</td><td>${x.m.n}</td></tr>`).join('') +
-      '</tbody></table></div></details></div>';
     return h;
   }
 
