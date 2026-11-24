@@ -2,7 +2,7 @@
 /* LiftTracking - PWA offline-first.
    Dati salvati solo sul telefono (localStorage). Nessun account, nessun server. */
 (() => {
-  const VERSION = '1.0.10';
+  const VERSION = '1.0.11';
   const KEY = 'diario-allenamenti.v1';
   const DAYS = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
 

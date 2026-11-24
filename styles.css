@@ -127,8 +127,8 @@ button.card { display: block; width: 100%; text-align: left; }
 .wk-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .ex h3 { font-size: 1.1rem; }
 .meta { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
-.sethead, .setrow { display: grid; grid-template-columns: 26px 1fr 1fr 48px; gap: 8px; align-items: center; }
-.mono .sethead, .mono .setrow { grid-template-columns: 26px 1fr 1fr 1fr 48px; }
+.sethead, .setrow { display: grid; grid-template-columns: 26px 1fr 1fr; gap: 8px; align-items: center; }
+.mono .sethead, .mono .setrow { grid-template-columns: 26px 1fr 1fr 1fr; }
 .sethead { font-size: 0.74rem; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
 .setrow { margin-bottom: 8px; }
 .setn { color: var(--muted); font-weight: 700; text-align: center; }
@@ -142,7 +142,7 @@ button.card { display: block; width: 100%; text-align: left; }
 
 /* ---------- progressi ---------- */
 .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-.tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 10px 11px; }
+.tile { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 10px 11px; }
 .tile .l { font-size: 0.74rem; color: var(--muted); font-weight: 600; }
 .tile .v { font-size: 1.35rem; font-weight: 800; margin-top: 2px; letter-spacing: -0.01em; }
 .tile .v small { font-size: 0.8rem; font-weight: 600; margin-left: 2px; }
@@ -192,3 +192,5 @@ details > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 #toast button { background: none; border: 0; color: #86efac; font-weight: 800; padding: 6px 4px; min-height: 36px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.savetop { position: sticky; top: 0; z-index: 25; background: var(--bg); padding: 8px 0 10px; margin: 0 0 4px; }
