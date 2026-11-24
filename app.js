@@ -1,8 +1,8 @@
 'use strict';
-/* Diario Allenamenti - PWA offline-first.
+/* LiftTracking - PWA offline-first.
    Dati salvati solo sul telefono (localStorage). Nessun account, nessun server. */
 (() => {
-  const VERSION = '1.0.0';
+  const VERSION = '1.0.10';
   const KEY = 'diario-allenamenti.v1';
   const DAYS = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
 
@@ -224,7 +224,7 @@
     let h = '';
     if (S.draft) {
       const done = S.draft.entries.reduce((a, e) => a + e.rows.filter((r) => r.done).length, 0);
-      h += `<div class="banner"><span><b>${S.draft.editId ? 'Modifica in corso' : 'Allenamento in corso'}</b><br>${esc(S.draft.sessionName)} · ${done} serie fatte</span><button type="button" data-act="resume">Riprendi</button></div>`;
+      h += `<div class="banner"><span><b>${S.draft.editId ? 'Modifica in corso' : 'Allenamento in corso'}</b><br>${esc(S.draft.sessionName)} · ${done} serie inserite</span><button type="button" data-act="resume">Riprendi</button></div>`;
     }
     h += '<div class="sec-title">Sessioni della settimana</div>';
     if (!S.plan.sessions.length) h += '<p class="empty">Non c\'è nessuna sessione. Aggiungine una dalla sezione Scheda.</p>';
@@ -271,24 +271,24 @@
     const d = S.draft;
     let h = '<div class="wk-top"><button type="button" class="linkbtn" data-act="wk-back">‹ Indietro</button><button type="button" class="linkbtn" data-act="wk-discard" style="color:var(--warn)">' + (d.editId ? 'Annulla modifica' : 'Scarta') + '</button></div>';
     h += `<h1 class="page">${esc(d.sessionName)}</h1>`;
+    h += `<div class="savetop"><button type="button" id="savebtn" class="btn primary" data-act="wk-save">${esc(saveLabel())}</button></div>`;
     h += `<div class="field" style="margin-top:12px"><label for="wk-date">Data</label><input class="in" type="date" id="wk-date" value="${esc(d.date)}" max="${esc(todayISO())}"></div>`;
     d.entries.forEach((e, i) => {
       const meta = [e.sets + ' × ' + e.reps, e.rest ? 'recupero ' + e.rest : ''].filter(Boolean).join(' · ');
       h += `<section class="card ex${e.mono ? ' mono' : ''}" data-ex="${i}"><h3>${esc(e.name)}</h3><div class="meta">${esc(meta)}</div>`;
       if (e.note) h += `<div class="meta">${esc(e.note)}</div>`;
       if (e.lastText) h += `<div class="meta">Ultima volta (${esc(shortDate(e.lastDate))}): ${esc(e.lastText)}</div>`;
-      h += `<div class="sethead"><span></span><span>kg</span><span>${e.mono ? 'Rip DX' : 'Rip'}</span>${e.mono ? '<span>Rip SX</span>' : ''}<span></span></div>`;
+      h += `<div class="sethead"><span></span><span>Carico</span><span>${e.mono ? 'Ripetizioni DX' : 'Ripetizioni'}</span>${e.mono ? '<span>Ripetizioni SX</span>' : ''}</div>`;
       e.rows.forEach((r, j) => {
         const L = e.last && e.last.length ? (e.last[j] || e.last[e.last.length - 1]) : null;
         h += `<div class="setrow" data-row="${j}"><span class="setn">${j + 1}</span>` +
           `<input class="in" inputmode="decimal" data-f="w" placeholder="kg" aria-label="Carico serie ${j + 1}" value="${esc(r.w)}">` +
           `<input class="in" inputmode="decimal" data-f="r" placeholder="${esc(L && L.r != null ? L.r : 'rip')}" aria-label="Ripetizioni serie ${j + 1}${e.mono ? ' destra' : ''}" value="${esc(r.r)}">` +
           (e.mono ? `<input class="in" inputmode="decimal" data-f="rl" placeholder="${esc(L && L.rl != null ? L.rl : 'rip')}" aria-label="Ripetizioni serie ${j + 1} sinistra" value="${esc(r.rl)}">` : '') +
-          `<button type="button" class="chk" data-act="done" aria-pressed="${r.done ? 'true' : 'false'}" aria-label="Serie ${j + 1} fatta">${CHECK}</button></div>`;
+          '</div>';
       });
-      h += `<div class="exact"><button type="button" class="btn small" data-act="addset">+ Serie</button><button type="button" class="btn small" data-act="delset"${e.rows.length <= 1 ? ' disabled' : ''}>− Serie</button></div></section>`;
+      h += '</section>';
     });
-    h += `<div class="savebar"><div><button type="button" id="savebtn" class="btn primary" data-act="wk-save">${esc(saveLabel())}</button></div></div>`;
     return h;
   }
   function wkSave() {
@@ -298,7 +298,7 @@
       e.rows.forEach((r) => { if (!r.done) return; const s = { w: parseNum(r.w), r: parseNum(r.r), rl: e.mono ? parseNum(r.rl) : null }; if (r.n) s.n = r.n; sets.push(s); });
       if (sets.length) { const o = { lid: e.lid, name: e.name, mono: e.mono, sets }; if (e.logNote) o.note = e.logNote; entries.push(o); }
     });
-    if (!entries.length) return toast('Spunta almeno una serie per salvare.');
+    if (!entries.length) return toast('Inserisci almeno una serie per salvare.');
     const log = { id: d.editId || 'l' + uid(), date: d.date || todayISO(), sessionId: d.sessionId, sessionName: d.sessionName, ts: d.editTs || Date.now(), entries };
     const wasEdit = !!d.editId;
     if (wasEdit) S.logs = S.logs.filter((l) => l.id !== log.id);
@@ -394,7 +394,7 @@
     if (!lifts.some((l) => l.lid === ui.progLid)) { const f = lifts.find((l) => l.count) || lifts[0]; ui.progLid = f.lid; }
     const lid = ui.progLid, full = liftSeries(lid);
     const ser = full;
-    h += `<div class="field"><label for="lift">Esercizio</label><select class="in" id="lift">${lifts.map((l) => `<option value="${esc(l.lid)}"${l.lid === lid ? ' selected' : ''}>${esc(l.name)} (${l.count})</option>`).join('')}</select></div>`;
+    h += `<div class="field"><label for="lift">Esercizio</label><select class="in" id="lift">${lifts.map((l) => `<option value="${esc(l.lid)}"${l.lid === lid ? ' selected' : ''}>${esc(l.name)}</option>`).join('')}</select></div>`;
     if (!full.length) return h + '<div class="card empty">Non hai ancora registrato questo esercizio. Dopo il primo allenamento qui compaiono i grafici.</div>';
     const W = Math.max(240, Math.min(560, document.documentElement.clientWidth) - 62);
     const wl = full.filter((x) => x.m.w != null);
@@ -473,13 +473,13 @@
     h += '<div class="sec-title">I tuoi dati</div><div class="card about"><p>Tutto è salvato solo su questo telefono, senza account. Se cancelli i dati del browser o disinstalli l\'app, i dati si perdono: fai ogni tanto un backup.</p>' +
       '<div class="row"><button type="button" class="btn" data-act="export">Esporta backup</button><button type="button" class="btn" data-act="import">Importa backup</button></div>' +
       '<input type="file" id="importFile" accept="application/json,.json" hidden>' +
-      `<p style="margin-top:12px">Diario Allenamenti · versione ${VERSION}</p></div>`;
+      `<p style="margin-top:12px">LiftTracking · versione ${VERSION}</p></div>`;
     return h;
   }
   function exportData() {
     const blob = new Blob([JSON.stringify({ app: 'diario-allenamenti', version: 1, exportedAt: new Date().toISOString(), data: { plan: S.plan, logs: S.logs } }, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = `diario-allenamenti-backup-${todayISO()}.json`;
+    a.href = URL.createObjectURL(blob); a.download = `lifttracking-backup-${todayISO()}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     toast('Backup creato');
@@ -521,18 +521,6 @@
       const wasEdit = !!S.draft.editId; S.draft = null; save(); if (wasEdit) ui.view = 'hist'; closeSub();
     },
     'wk-save': () => wkSave(),
-    done: (el) => {
-      const ex = el.closest('[data-ex]'), row = el.closest('[data-row]');
-      const r = S.draft.entries[+ex.dataset.ex].rows[+row.dataset.row];
-      r.done = !r.done; save();
-      el.setAttribute('aria-pressed', r.done ? 'true' : 'false');
-      const sb = $('#savebtn'); if (sb) sb.textContent = saveLabel();
-    },
-    addset: (el) => {
-      const e = S.draft.entries[+el.closest('[data-ex]').dataset.ex], prev = e.rows[e.rows.length - 1];
-      e.rows.push({ w: prev ? prev.w : '', r: '', rl: '', done: false }); save(); keepScroll(render);
-    },
-    delset: (el) => { const e = S.draft.entries[+el.closest('[data-ex]').dataset.ex]; if (e.rows.length > 1) { e.rows.pop(); save(); keepScroll(render); } },
     /* scheda */
     'p-open': (el) => { ui.editSession = el.dataset.id; ui.openEx = null; openSub(); render(); window.scrollTo(0, 0); },
     'p-back': () => closeSub(),
@@ -590,7 +578,9 @@
     const t = e.target;
     if (t.dataset.f) {
       const ex = t.closest('[data-ex]'), row = t.closest('[data-row]'); if (!ex || !row || !S.draft) return;
-      S.draft.entries[+ex.dataset.ex].rows[+row.dataset.row][t.dataset.f] = t.value; saveSoon(); return;
+      const rw = S.draft.entries[+ex.dataset.ex].rows[+row.dataset.row]; rw[t.dataset.f] = t.value; rw.done = true;
+      const sb = $('#savebtn'); if (sb) sb.textContent = saveLabel();
+      saveSoon(); return;
     }
     if (t.dataset.xf) {
       const s = sessionById(ui.editSession); if (!s) return;

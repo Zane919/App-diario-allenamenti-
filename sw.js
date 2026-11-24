@@ -1,5 +1,5 @@
 /* Service worker: l'app funziona anche senza rete. */
-const CACHE = 'diario-allenamenti-v1.0.4';
+const CACHE = 'diario-allenamenti-v1.0.10';
 const SHELL = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 

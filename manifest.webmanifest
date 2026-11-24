@@ -1,9 +1,9 @@
 {
-  "name": "Diario Allenamenti",
+  "name": "LiftTracking",
   "id": "./",
-  "short_name": "Allenamenti",
+  "short_name": "LiftTracking",
   "prefer_related_applications": false,
-  "description": "Diario Allenamenti: scheda settimanale, carichi, ripetizioni e serie con grafici di progressione. Dati solo sul telefono.",
+  "description": "LiftTracking: scheda settimanale, carichi, ripetizioni e serie con grafici di progressione. Dati solo sul telefono.",
   "lang": "it",
   "start_url": "./",
   "scope": "./",
