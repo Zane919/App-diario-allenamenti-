@@ -175,25 +175,40 @@
     if (s.r != null && s.rl != null) r = s.r + '/' + s.rl; else if (s.r != null) r = String(s.r); else if (s.rl != null) r = '–/' + s.rl;
     return w + '×' + r + (s.n ? ' (' + s.n + ')' : '');
   }
-  function liftSeries(lid) {
-    const out = [];
-    sortedLogs().forEach((l) => l.entries.forEach((e) => { if (e.lid === lid) out.push({ date: l.date, e, m: metrics(e) }); }));
+  /* Stesso esercizio = stessa progressione: gli esercizi con lo stesso nome (anche in sedute diverse) vengono uniti */
+  const nameKey = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  function canonMap() {
+    const byName = new Map(), m = new Map();
+    const add = (lid, name) => {
+      if (m.has(lid)) return;
+      const k = nameKey(name);
+      if (!byName.has(k)) byName.set(k, lid);
+      m.set(lid, byName.get(k));
+    };
+    S.plan.sessions.forEach((s) => s.exercises.forEach((x) => add(x.lid, x.name)));
+    sortedLogs().forEach((l) => l.entries.forEach((e) => add(e.lid, e.name)));
+    return m;
+  }
+  function liftSeries(lid, cm) {
+    cm = cm || canonMap();
+    const c = cm.get(lid) || lid, out = [];
+    sortedLogs().forEach((l) => l.entries.forEach((e) => { if ((cm.get(e.lid) || e.lid) === c) out.push({ date: l.date, e, m: metrics(e) }); }));
     return out;
   }
   function liftList() {
-    const seen = new Map();
-    S.plan.sessions.forEach((s) => s.exercises.forEach((x) => { if (!seen.has(x.lid)) seen.set(x.lid, x.name); }));
-    sortedLogs().forEach((l) => l.entries.forEach((e) => { if (!seen.has(e.lid)) seen.set(e.lid, e.name); }));
-    return [...seen].map(([lid, name]) => ({ lid, name, count: liftSeries(lid).length }));
+    const cm = canonMap(), seen = new Map();
+    S.plan.sessions.forEach((s) => s.exercises.forEach((x) => { const c = cm.get(x.lid); if (!seen.has(c)) seen.set(c, x.name); }));
+    sortedLogs().forEach((l) => l.entries.forEach((e) => { const c = cm.get(e.lid); if (!seen.has(c)) seen.set(c, e.name); }));
+    return [...seen].map(([lid, name]) => ({ lid, name, count: liftSeries(lid, cm).length }));
   }
   function lastEntry(lid) {
-    const ls = sortedLogs();
-    for (let i = ls.length - 1; i >= 0; i--) { const e = ls[i].entries.find((x) => x.lid === lid); if (e) return { date: ls[i].date, e }; }
+    const cm = canonMap(), c = cm.get(lid) || lid, ls = sortedLogs();
+    for (let i = ls.length - 1; i >= 0; i--) { const e = ls[i].entries.find((x) => (cm.get(x.lid) || x.lid) === c); if (e) return { date: ls[i].date, e }; }
     return null;
   }
 
   /* ---------- stato dell'interfaccia ---------- */
-  const ui = { view: 'home', workout: false, editSession: null, openEx: null, progLid: null, range: 0, openLog: null };
+  const ui = { view: 'home', workout: false, editSession: null, openEx: null, progLid: null, openLog: null };
   let subOpen = false;   // il tasto "indietro" del telefono chiude allenamento / editor di sessione
   function openSub() { if (!subOpen) { subOpen = true; history.pushState({ sub: 1 }, ''); } }
   function leaveSub() { subOpen = false; ui.workout = false; ui.editSession = null; render(); window.scrollTo(0, 0); }
@@ -374,13 +389,12 @@
   }
   function viewProgress() {
     const lifts = liftList();
-    let h = '<h1 class="page">Progressi</h1><p class="sub">Carichi, ripetizioni e serie nel tempo.</p>';
+    let h = '';
     if (!lifts.length) return h + '<p class="empty">Aggiungi degli esercizi alla scheda per vedere i grafici.</p>';
     if (!lifts.some((l) => l.lid === ui.progLid)) { const f = lifts.find((l) => l.count) || lifts[0]; ui.progLid = f.lid; }
-    const lid = ui.progLid, full = liftSeries(lid), rng = ui.range;
-    const ser = rng ? full.slice(-rng) : full;
+    const lid = ui.progLid, full = liftSeries(lid);
+    const ser = full;
     h += `<div class="field"><label for="lift">Esercizio</label><select class="in" id="lift">${lifts.map((l) => `<option value="${esc(l.lid)}"${l.lid === lid ? ' selected' : ''}>${esc(l.name)} (${l.count})</option>`).join('')}</select></div>`;
-    h += '<div class="seg" role="group" aria-label="Periodo">' + [[10, 'Ultimi 10'], [30, 'Ultimi 30'], [0, 'Tutto']].map((r) => `<button type="button" data-act="range" data-v="${r[0]}" class="${rng === r[0] ? 'on' : ''}" aria-pressed="${rng === r[0]}">${r[1]}</button>`).join('') + '</div>';
     if (!full.length) return h + '<div class="card empty">Non hai ancora registrato questo esercizio. Dopo il primo allenamento qui compaiono i grafici.</div>';
     const W = Math.max(240, Math.min(560, document.documentElement.clientWidth) - 62);
     const wl = full.filter((x) => x.m.w != null);
@@ -406,7 +420,7 @@
 
   /* ================== SCHEDA ================== */
   function viewPlan() {
-    let h = '<h1 class="page">Scheda</h1><p class="sub">Tocca una sessione per cambiare esercizi, serie, ripetizioni e recupero.</p>';
+    let h = '';
     S.plan.sessions.forEach((s, i) => {
       h += `<div class="card"><button type="button" class="exhead" data-act="p-open" data-id="${esc(s.id)}"><div class="t"><b>${esc(s.name)}</b><span>${esc((s.day != null ? DAYS[s.day] + ' · ' : '') + s.exercises.length + ' esercizi')}</span></div>${CHEV}</button>` +
         `<div class="row" style="margin-top:10px"><button type="button" class="btn small" data-act="p-upsess" data-id="${esc(s.id)}"${i === 0 ? ' disabled' : ''} aria-label="Sposta su">↑</button><button type="button" class="btn small" data-act="p-downsess" data-id="${esc(s.id)}"${i === S.plan.sessions.length - 1 ? ' disabled' : ''} aria-label="Sposta giù">↓</button><button type="button" class="btn small danger" data-act="p-delsess" data-id="${esc(s.id)}">Elimina</button></div></div>`;
@@ -444,7 +458,7 @@
   /* ================== STORICO e backup ================== */
   function viewHistory() {
     const logs = sortedLogs().reverse();
-    let h = '<h1 class="page">Storico</h1><p class="sub">Gli allenamenti che hai registrato</p>';
+    let h = '';
     if (!logs.length) h += '<p class="empty">Nessun allenamento registrato.</p>';
     logs.forEach((l) => {
       const open = ui.openLog === l.id;
@@ -519,7 +533,6 @@
       e.rows.push({ w: prev ? prev.w : '', r: '', rl: '', done: false }); save(); keepScroll(render);
     },
     delset: (el) => { const e = S.draft.entries[+el.closest('[data-ex]').dataset.ex]; if (e.rows.length > 1) { e.rows.pop(); save(); keepScroll(render); } },
-    range: (el) => { ui.range = +el.dataset.v; render(); },
     /* scheda */
     'p-open': (el) => { ui.editSession = el.dataset.id; ui.openEx = null; openSub(); render(); window.scrollTo(0, 0); },
     'p-back': () => closeSub(),
